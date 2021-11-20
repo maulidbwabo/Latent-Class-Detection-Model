@@ -485,3 +485,63 @@ rfModel = train(x = rfDataTrain,
                 )
 )
 rfModel
+#Stochastic Gradient Boosting (SGB) 
+sgbDataTrain = copy(trainData)
+sgbDataTrain
+sgbDataTrain[,Region:=as.numeric(Region)]
+sgbDataValidation = copy(testData)
+sgbDataValidation[,Region:=as.numeric(Region)]
+##Creating a dummy variable  
+ddum = dummyVars("~.", data = sgbDataTrain)
+sgbDataTrain = data.table(predict(ddum, newdata = sgbDataTrain))
+sgbDataValidation = data.table(predict(ddum, newdata = sgbDataValidation))
+#
+sgbModel = train(KS1 ~.,
+                  data = sgbDataTrain,
+                  method = "gbm",
+                  preProcess = c("scale", "center"),
+                  metric = "RMSE",
+                  trControl = trainControl(method = "cv",
+                                           number = 5
+                  ),
+                  tuneGrid = expand.grid(interaction.depth = 1:3,
+                                         shrinkage = 0.1,
+                                         n.trees = c(50, 100, 150),
+                                         n.minobsinnode = 10),
+                  verbose = FALSE
+)
+sgbModel
+summary(sgbModel)
+#comparison between the predicted and actual data
+mean(stats::residuals(sgbModel)^2)
+mean((predict(sgbModel, sgbDataValidation) -
+        sgbDataValidation$KS1)^2)
+##
+explainSGBt = explain(sgbModel, label = "sgbt",
+                       data = sgbDataTrain,
+                       y = sgbDataTrain$KS1)
+explainSGBv = explain(sgbModel, label = "sgbv",
+                       data = sgbDataValidation,
+                       y = sgbDataValidation$KS1)
+##
+performanceSGBt = model_performance(explainSGBt)
+performanceSGBv = model_performance(explainSGBv)
+##
+plot_grid(
+  plot(performanceSGBt, performanceSGBv),
+  plot(performanceSGBt, performanceSGBv, geom = "boxplot"),
+  ncol = 2)
+##
+importanceSGBt = variable_importance(explainSGBt)
+importanceSGBv = variable_importance(explainSGBv)
+plot(importanceSGBt, importanceSGBv)
+##Variable of response function
+library(cowplot)
+library(randomForest)
+library(DALEX)
+install.packages("survxai")
+library(survxai)
+library(mlr)
+library(xgboost)
+library(breakDown)
+## Surv package require the object to be initially explained with Surv package
