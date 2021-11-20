@@ -91,7 +91,7 @@ rm(d1)
 #Training and Validation of the data
 set.seed(1234)
 index = createDataPartition(dynamic$Region, p = 0.8, list = FALSE)
-trainData = dynamic[index, ]
+trainData = dynamicP[index, ]
 validationData = dynamic[-index, ]
 ##PCA
 #confirm structure
@@ -122,7 +122,7 @@ p1 + geom_point(aes(colour = trainData$Region)) +
 ##SVM
 set.seed(12345)
 svm = train(x = svmDataTrain,
-             y = trainData$Region,
+             y = dynamicP$Region,
              method = "svmLinear",
              preProcess = NULL,
              metric = "Accuracy",
@@ -189,6 +189,57 @@ cartModel <- train(x = cartDataTrain,
 )
 CartModel
 rm(dscaled)
+##Random Forest (Predictions on regressions)
+#Training and Validation of the data
+set.seed(1234)
+index = createDataPartition(d$RegionArusha, p = 0.8, list = FALSE)
+trainData = d[index, ]
+validationData = d[-index, ]
+##
+#confirm structure
+str(trainData[,c(4:8,9:14)])
+#PCA
+pc = prcomp(trainData[,c(4:8,9:14)], center = TRUE, scale. = TRUE)
+summary(pc)
+plot(pc)
+##Predicting 
+pcValidationData1 = predict(pc, newdata = validationData[,c(4:8,9:14)])
+#scalable method using PcaMethods
+pc=pca(trainData[,c(4:8,9:14)], method = "svd",nPcs = 4, scale = "uv", 
+        center = TRUE)
+pc
+summary(pc)
+##Validations two
+pcValidationData2 = predict(pc, newdata = validationData[,c(4:8,9:14)])
+pcValidationData1[,1]
+pcValidationData2$score
+pcValidationData2$scores[,1]
+##The result turn out to be the same 
+svmDataTrain = trainData[,.(KS3, E1)]
+svmDataValidate = validationData[,.(KS3, E1)]
+p1 = ggplot(data = svmDataTrain,
+             aes(x =E1, y = KS3))
+## data point colored by country
+# set up training & validation data
+svmDataTrain = trainData[,-1]
+svmDataTrain
+svmDataValidation = validationData[,-1]
+##
+set.seed(12345)
+svmLinear =train(x = svmDataTrain,
+                   y = trainData$RegionTanga,
+                   method = "svmLinear",
+                   preProcess = c("scale", "center", "pca"),
+                   metric = "Accuracy",
+                   trControl = trainControl(method = "cv",
+                                            number = 5,
+                                            seeds = c(123, 234, 345, 456, 567, 678)
+                   )
+)
+svmLinear
+#run linear SVM on the full data set
+p1 + geom_point(aes(colour = trainData$MC3)) +
+  scale_colour_viridis(discrete = TRUE)
 #structure of the data
 str(dynamicP)
 str(d)
@@ -285,7 +336,152 @@ pcValidationD1[,3]
 pcValidationData2$scores[,1]
 pcValidationData2$scores[,2]
 pcValidationData2$x[,1]
-##Robust PCA
-dynamicP=cbind(dynamicP[,c(11)])
+##Random Forest(Machine Learning)
+library(randomForest)
+library(tidyverse)
+library(dslabs)
+data("mnist_27")
+str(mnist_27)
+head(mnist_27)
+##
+library(randomForest)
+dynamicP$Region=as.factor(dynamicP$Region)
 str(dynamicP)
-d = cbind(d[,c(1:9)], dScaled)
+fit = randomForest(Region ~., data = dynamicP)
+plot(fit)
+##
+dynamicP%>%
+  mutate(y_hat = predict(fit, newdata = dynamicP)) %>%
+  ggplot() +
+  geom_point(aes(KS1, KS3)) +
+  geom_line(aes(KS1, y_hat), col="red")
+str(polls_2008)
+mnist_27$test
+#RANDOM FOREST
+trainData
+trainData$Region=as.factor(trainData$Region)
+rfDataTrain = copy(trainData)
+rfDataTrain
+##Validation
+validationData
+rfDataValidation = copy(validationData)
+##
+set.seed(12345)
+rfModel = train(x = rfDataTrain,
+                 y = trainData$Region,
+                 method = "ranger",
+                 preProcess = c("scale", "center", "pca"),
+                 metric = "Accuracy",
+                 num.trees = 3,
+                 trControl = trainControl(method = "cv",
+                                          number = 3
+                 )
+)
+rfMode
+##Comparison between classification and Regression Tree (CART) and Random Forest 
+library(data.table)
+dynamic=read.csv("C:/Users/bwabo/OneDrive/Desktop/Ph.D. Thesis/Data set.csv",header = TRUE,sep = ",",stringsAsFactors = FALSE)
+head(dynamic)
+View(dynamic)
+##Principal components analysis(Exploratory Data Analysis)
+dynamic = as.data.table(dynamic)
+dynamicP=subset(dynamic,select = -c(1:4,6:14))
+str(dynamicP)
+head(dynamicP)
+dynamicP$Region=as.factor(dynamicP$Region)
+head(dynamicP)
+rf1 = randomForest(Region ~ ., dynamicP, ntree=50, norm.votes=FALSE)
+rf1
+summary(rf1)
+dyna.rf = randomForest(Region ~ ., dynamicP, ntree=50, norm.votes=FALSE)
+dyna.rf = grow(dyna.rf, 50)
+print(dyna.rf)
+plot(dyna.rf)
+dyna.rf$predicted
+dyna.rf$type
+dyna.rf$classes
+dyna.rf$importanceSD
+set.seed(1)
+data(dynamicP)
+dyna.rf <- randomForest(Region ~ ., dynamicP, keep.forest=FALSE)
+plot(dyna.rf)
+dyna.rf
+##MSDP
+set.seed(1)
+dyna1.rf = randomForest(Region ~ ., dynamicP, proximity=TRUE,
+                        keep.forest=FALSE)
+MDSplot(dyna1.rf, dynamicP$Region)
+## Using different symbols for the classes:
+MDSplot(dyna1.rf, dynamicP$Region, palette=rep(1, 3), pch=as.numeric(dynamicP$Region))
+##Predict plot 
+data(iris)
+set.seed(111)
+ind = sample(2, nrow(dynamicP), replace = TRUE, prob=c(0.8, 0.2))
+dyna2.rf = randomForest(Region ~ ., data=dynamicP[ind == 1,])
+dyna2.pred = predict(dyna2.rf, dynamicP[ind == 2,])
+dyna2.pred
+table(observed = dynamicP[ind==2, "Region"], predicted = dyna2.pred)
+##Split the data into testing and trainning 
+ind=sample(2,nrow(dynamicP),replace = TRUE,prob = C(0.7.03))
+ind = sample(2, nrow(dynamicP), replace = TRUE, prob=c(0.8, 0.2))
+trainData = dynamicP[ind==1,]
+testData = dynamicP[ind==2,]
+##Generate the Random Forest
+dyna3_rf=randomForest(Region ~., data = trainData,ntree=100,proximity=T)
+dyna4_rf=randomForest(Region ~.,data = testData,ntree=100,proximity=T)
+plot(dyna4_rf)
+plot(dyna3_rf)
+##Random Forest for Testing Data
+dynapred=predict(dyna3_rf,newdata=testData)
+table(dynapred,testData$Region)
+plot(dyna3_rf)
+dyna3_rf
+dyna4_rf
+summary(dyna3_rf)
+##Confussion Matrix
+CM = table(dynapred, testData$Region)
+accuracy = (sum(diag(CM)))/sum(CM)
+accuracy
+##Extended Random Forest 
+cartDataTrain = copy(trainData)
+cartDataTrain[,Region:=as.numeric(Region)]
+cartDataValidation = copy(testData)
+cartDataValidation[,Region:=as.numeric(Region)]
+##CART Model
+set.seed(12345)
+cartModel  train(x = cartDataTrain,
+                 y = trainData$Region,
+                 method = "rpart",
+                 preProcess = c("scale", "center", "pca"),
+                 metric = "Accuracy",
+                 tuneLength = 10,
+                 trControl = trainControl(method = "cv",
+                                          number = 5
+                 )
+)
+cartModel
+summary(cartModel)
+#Testing 
+predictOnTrainT = predict(cartModel, newdata = cartDataTrain)
+mean( predictOnTrainT == trainData$Region)
+##Validations 
+predictOnTestT = predict(cartModel, newdata = cartDataValidation)
+mean(predictOnTestT == testData$Region)
+##Random Forest 
+rfDataTrain = copy(trainData)
+rfDataTrain[,Region:=as.numeric(Region)]
+rfDataValidation = copy(testData)
+rfDataValidation[,Region:=as.numeric(Region)]
+##
+set.seed(12345)
+rfModel = train(x = rfDataTrain,
+                y = trainData$Region,
+                method = "ranger",
+                preProcess = c("scale", "center", "pca"),
+                metric = "Accuracy",
+                num.trees = 20,
+                trControl = trainControl(method = "cv",
+                                         number = 5
+                )
+)
+rfModel
