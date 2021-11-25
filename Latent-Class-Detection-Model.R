@@ -627,17 +627,6 @@ Dy_clus = res.clus(Dynamic_pls)
 ## To complete REBUS, run iterative algorithm
 rebus_dy = it.reb(Dynamic_pls, Dy_clus, nk=3,
                    stop.crit=0.005, iter.max=100)
-# bootstrapped path coefficients
-Governance_3_pls$boot
-
-# summarized results
-summary(Governance_3_pls)
-
-# running bootstrap validation
-Governace_3 =plspm(Governace_3, Governance_3_path,Governance_3_blocks, modes = Governance_3_mods,
-                   boot.val = TRUE, br = 10,00)
-# bootstrap results
-Governance_3l$boot
 ##Load data
 mode(dynamicP)
 class(dynamicP)
@@ -666,7 +655,6 @@ dimnames(dy_inner)=list(c("Knowledge","Sensing", "Cognition","Sustainable"),
                         c("Knowledge","Sensing", "Cognition", "Sustainable"))
 dy_outer=list(c(1,2,3,4,5),c(6,7,8,9,10,11),c(17,18,19,20,21),c(39,40,41,42,43))
 dy_mod=c("A","A","A","A")
-head(dynamicX)
 dy_global=plspm(dynamicZ,dy_inner,dy_outer,modes = dy_mod)
 dy_global
 summary(dy_global)
@@ -681,8 +669,14 @@ summary(locs)
 summary(locs$loc.model.1)
 summary(locs$loc.model.2)
 summary(locs$loc.model.3)
+#plot the local model(Comparing inner local model)
+plot(locs$loc.model.1, main="Class 1")
+plot(locs$loc.model.2,main="Class 2")
+plot(locs$loc.model.3,main="Class 3")
 ##Apply the Rebus Test
 # apply rebus.test
 # apply rebus.test
 dy_test = rebus.test(dy_global, rebus_dy)
+##Cross Validation (PLS-PM)
+
 
