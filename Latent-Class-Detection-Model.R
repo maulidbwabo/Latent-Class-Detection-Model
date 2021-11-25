@@ -43,7 +43,7 @@ head(dynamic)
 View(dynamic)
 ##Principal components analysis(Exploratory Data Analysis)
 dynamic = as.data.table(dynamic)
-dynamicP=subset(dynamic,select = -c(1:4,6:14))
+dynamicP=subset(dynamic,select = -c(1:14))
 head(dynamicP)
 str(dynamicP)
 d = copy(dynamicP)
@@ -545,3 +545,144 @@ library(mlr)
 library(xgboost)
 library(breakDown)
 ## Surv package require the object to be initially explained with Surv package
+##LATENT CLASS DETECTION (REBUS-PL)
+library(plspm)
+dynamicP= as.data.table(dynamicP)
+head(dynamicP)
+summary(dynamicP)
+view(dynamicP)
+class(dynamicP)
+dynamic1=as.list(dynamicP)
+print(dynamicP)
+print(dynamic1)
+view(dynamic1)
+# The path matrix
+Knowledge = rep(0,5)
+Sensing =rep(0,5)
+Cognition=rep(0,5)
+Agile=c(1,1,1,0,0)
+Sustainable=c(1,1,1,1,0)
+# Matrix created by row binding
+Dynamic_Path=rbind(Knowledge,Sensing,Cognition,Agile,Sustainable)
+print(Dynamic_Path)
+# List of blocks(outer model)
+Dynamic_blocks=list(1:5, 6:11, 17:21, 22:26,39:43)
+class(Dynamic_blocks)
+# Vector of modes (reflective)
+Dynamic_modes =rep("A",5)
+class(Dynamic_modes)
+# plot the inner matrix
+innerplot(Dynamic_Path)
+class(Dynamic_pls)
+# apply plspm
+Dynamic_pls =plspm(dynamicP,Dynamic_Path , Dynamic_blocks, modes = Dynamic_modes)
+print(Dynamic_pls)
+Dynamic_pls$boot
+Dynamic_pls$path_coefs
+Dynamic_pls$unidim
+plot(Dynamic_pls, what="loadings")
+plot(Dynamic_pls)
+plot(Dynamic_pls,arr.pos=0.3)
+Dynamic_pls$outer_model
+summary(Dynamic_pls)
+#Bootstrap validation
+Dynamic_val=plspm(dynamicP,Dynamic_Path,Dynamic_blocks,modes = Dynamic_modes,scaling = NULL,scheme = "centroid",
+                  scaled = TRUE,boot.val = TRUE,br=5000)
+Dynamic_val$boot
+Dynamic_val$model
+
+#breaking down the global model 
+#cluster 
+## Then compute cluster analysis on residuals of global model
+# hierarchical cluster analysis on the LV scores
+Dynamic_hclus =hclust(dist(Dynamic_pls$scores), method ="ward.D")
+# Plot Dendrogram
+plot(Dynamic_hclus, xlab ="", sub ="", cex = 0.8)
+abline(h = 40, col ="#bc014655", lwd = 4)
+# cut tree to obtain 3 clusters
+clusters =cutree(Dynamic_hclus, k =3)
+#
+table(clusters)
+#Scores and membership into the data frame
+# latent variable scores in data frame
+dy_scores=as.data.frame(Dynamic_pls$scores)
+##Adding cluster to data frame
+# add clusters to data frame
+dy_scores$Cluster=as.factor(clusters)
+#Picturing out the data
+# add clusters to data frame
+head(dy_scores,n=10)
+#
+library(plyr)
+# calculate cluster centroids
+centroids = ddply(dy_scores, .(Cluster), summarise,
+                  AvKnowlegde = mean(Knowledge), AvSensing = mean(Sensing),
+                  AvAgile = mean(Agile), AvSustainable= mean(Sustainable))
+
+print(centroids)
+#apply REBUS
+Dynamic_reb=rebus.pls(Dynamic_pls)
+#Apply REBUS
+Dy_clus = res.clus(Dynamic_pls)
+## To complete REBUS, run iterative algorithm
+rebus_dy = it.reb(Dynamic_pls, Dy_clus, nk=3,
+                   stop.crit=0.005, iter.max=100)
+# bootstrapped path coefficients
+Governance_3_pls$boot
+
+# summarized results
+summary(Governance_3_pls)
+
+# running bootstrap validation
+Governace_3 =plspm(Governace_3, Governance_3_path,Governance_3_blocks, modes = Governance_3_mods,
+                   boot.val = TRUE, br = 10,00)
+# bootstrap results
+Governance_3l$boot
+##Load data
+mode(dynamicP)
+class(dynamicP)
+storage.mode(dynamicP)
+lapply(dynamicP[,1:5],class)
+dynamic2=data.matrix(dynamicP)
+mode(dynamic2)
+# Calculate plspm
+
+##
+#Example 
+library(readxl)
+Data_set <- read_excel("Data set.xlsx")
+str(Data_set)
+View(Data_set)
+dynamicX=subset(Data_set,select = -c(1:15))
+str(dynamicX)
+mode(dynamicX)
+str(dynamicP)
+dynamicZ= as.data.table(dynamicX)
+str(dynamicZ)
+##
+dy_inner=matrix(c(0,0,0,0,0,0,0,0,1,1,0,0,1,1,1,0), 4, 4,byrow=TRUE)
+
+dimnames(dy_inner)=list(c("Knowledge","Sensing", "Cognition","Sustainable"),
+                        c("Knowledge","Sensing", "Cognition", "Sustainable"))
+dy_outer=list(c(1,2,3,4,5),c(6,7,8,9,10,11),c(17,18,19,20,21),c(39,40,41,42,43))
+dy_mod=c("A","A","A","A")
+head(dynamicX)
+dy_global=plspm(dynamicZ,dy_inner,dy_outer,modes = dy_mod)
+dy_global
+summary(dy_global)
+
+rebus_dy=rebus.pls(dy_global,stop.crit = 0.005,iter.max = 100)
+rebus_dy
+rebus_dy$loadings
+##Local Models 
+# local plspm models
+locs = local.models(dy_global, rebus_dy)
+summary(locs)
+summary(locs$loc.model.1)
+summary(locs$loc.model.2)
+summary(locs$loc.model.3)
+##Apply the Rebus Test
+# apply rebus.test
+# apply rebus.test
+dy_test = rebus.test(dy_global, rebus_dy)
+
